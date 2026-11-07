@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<title>ZeeMo</title>
+<meta name="description" content="Messaging for schools, offices and cooperatives.">
+<meta name="theme-color" content="#18215C">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,600;12..96,800&display=swap">
+<link rel="stylesheet" href="styles.css">
+<script src="config.js"></script>
+<script type="module" src="app.js"></script>
+</head>
+<body>
+<!-- APP:START -->
+<div class="app">
+  <section class="pane pane-list" aria-label="Chats">
+    <header class="bar">
+      <div class="wordmark grow" aria-label="ZeeMo"><b>Zee</b><span>Mo</span></div>
+      <button class="icon-btn" id="menu-btn" aria-label="More options" aria-haspopup="menu">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="19" r="1.6" fill="currentColor"/></svg>
+      </button>
+      <div class="menu" id="menu" role="menu" hidden>
+        <button id="menu-new-group" role="menuitem">New group</button>
+        <button id="menu-profile" role="menuitem">Profile</button>
+        <button id="menu-lock" role="menuitem" hidden>Lock now</button>
+        <button id="menu-signout" role="menuitem">Sign out</button>
+      </div>
+    </header>
+    <div class="banner" id="offline" role="status" hidden>Offline. Messages will send when you reconnect.</div>
+    <div class="notice" id="notice" role="status" hidden></div>
+    <div class="search">
+      <label class="sr-only" for="search-input">Search chats</label>
+      <input id="search-input" type="search" placeholder="Search chats" autocomplete="off">
+    </div>
+    <div class="list" id="list"></div>
+    <button class="fab" id="fab" aria-label="New chat">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l1.2-4.2L15.6 5.4a2 2 0 012.8 0l.2.2a2 2 0 010 2.8L8.2 18.8 4 20z"/><path d="M13.5 7.5l3 3"/></svg>
+    </button>
+  </section>
+  <section class="pane pane-chat" id="chat" aria-label="Conversation"></section>
+</div>
+<div class="sheet" id="sheet" hidden></div>
+<div class="auth" id="auth" hidden></div>
+<div class="actions" id="actions" hidden></div>
+<div class="toast" id="toast" role="status" hidden></div>
+<!-- APP:END -->
+</body>
+</html>
