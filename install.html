@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Install ZeeMo</title>
+<meta name="description" content="Install the ZeeMo messaging app on Android, iPhone or a computer in under a minute.">
+<meta name="theme-color" content="#18215C">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,600;12..96,800&display=swap">
+<script src="config.js"></script>
+<style>
+:root {
+  --ink: #151935; --muted: #5B6182; --paper: #F2F3F8; --card: #FFFFFF; --line: #D9DCEA;
+  --indigo: #24317E; --deep: #18215C; --on-deep: #F3F4FF; --turmeric: #D3951A; --soft: #E8EAF3;
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "Atkinson Hyperlegible", "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ink: #E6E8F6; --muted: #A3A8C8; --paper: #0E1124; --card: #161A33; --line: #2A3053; --soft: #1F2444; --indigo: #C3CAF7;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 17px/1.5 var(--body); }
+a { color: inherit; }
+
+.hero { background: var(--deep); color: var(--on-deep); padding: 28px 16px 92px; }
+.hero-in { max-width: 920px; margin: 0 auto; }
+.wordmark { font-family: var(--display); font-size: 30px; letter-spacing: -0.03em; }
+.wordmark b { font-weight: 800; }
+.wordmark span { font-weight: 300; color: var(--turmeric); }
+h1 { font-family: var(--display); font-weight: 800; font-size: clamp(32px, 7vw, 52px); line-height: 1.05; letter-spacing: -0.03em; margin: 28px 0 10px; max-width: 14ch; }
+.lede { margin: 0; max-width: 46ch; color: #C9CEF2; font-size: 18px; }
+
+main { max-width: 920px; margin: -64px auto 0; padding: 0 16px 48px; display: grid; gap: 20px; }
+
+.get { background: var(--card); border-radius: 18px; padding: 22px; display: grid; gap: 20px; grid-template-columns: 1fr; align-items: center; box-shadow: 0 8px 30px rgba(21, 25, 53, 0.12); }
+.qr { width: 184px; height: 184px; padding: 10px; background: #fff; border-radius: 14px; border: 1px solid var(--line); justify-self: center; }
+.qr img { width: 100%; height: 100%; display: block; image-rendering: pixelated; }
+.get h2 { font-family: var(--display); font-size: 24px; margin: 0 0 6px; letter-spacing: -0.02em; }
+.get p { margin: 0 0 14px; color: var(--muted); }
+.url { font-family: var(--display); font-weight: 600; font-size: 20px; color: var(--indigo); word-break: break-all; }
+.buttons { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.btn { appearance: none; border: 0; border-radius: 999px; padding: 13px 22px; font: 700 16px var(--body); cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; }
+.btn.primary { background: var(--turmeric); color: #1E1606; }
+.btn.ghost { background: var(--soft); color: var(--ink); }
+.btn:focus-visible { outline: 3px solid var(--turmeric); outline-offset: 2px; }
+.done { color: #1E7B3C; font-weight: 700; margin: 12px 0 0; }
+
+.steps-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.steps-head h2 { font-family: var(--display); font-size: 24px; margin: 6px 0 0; letter-spacing: -0.02em; }
+.steps { display: grid; gap: 16px; grid-template-columns: 1fr; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px; position: relative; }
+.card.yours { border: 2px solid var(--turmeric); }
+.card .tag { position: absolute; top: -12px; right: 14px; background: var(--turmeric); color: #1E1606; font-size: 13px; font-weight: 700; padding: 2px 10px; border-radius: 999px; display: none; }
+.card.yours .tag { display: block; }
+.card h3 { font-family: var(--display); font-size: 20px; margin: 0 0 2px; }
+.card .sub { color: var(--muted); font-size: 15px; margin: 0 0 10px; }
+.card ol { margin: 0; padding-left: 22px; }
+.card li { margin: 6px 0; }
+.kbd { display: inline-block; border: 1px solid var(--line); background: var(--soft); border-radius: 6px; padding: 0 6px; font-weight: 700; white-space: nowrap; }
+
+.notes { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px; }
+.notes h2 { font-family: var(--display); font-size: 20px; margin: 0 0 8px; }
+.notes ul { margin: 0; padding-left: 20px; }
+.notes li { margin: 6px 0; }
+footer { color: var(--muted); font-size: 14px; display: flex; gap: 14px; flex-wrap: wrap; }
+
+@media (min-width: 720px) {
+  .get { grid-template-columns: auto 1fr; padding: 28px; gap: 28px; }
+  .steps { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* A4 handout: one page, no buttons */
+@media print {
+  @page { size: A4; margin: 12mm; }
+  :root { --paper: #fff; --card: #fff; --ink: #151935; --muted: #4A5070; --line: #C9CDE0; --soft: #EEF0F7; --indigo: #24317E; }
+  body { font-size: 13px; background: #fff; }
+  .hero { padding: 14px 18px 18px; -webkit-print-color-adjust: exact; print-color-adjust: exact; border-radius: 12px; }
+  h1 { margin: 10px 0 4px; font-size: 32px; max-width: none; }
+  .lede { font-size: 14px; }
+  main { margin: 12px 0 0; padding: 0; gap: 12px; }
+  .get { box-shadow: none; border: 1px solid var(--line); grid-template-columns: auto 1fr; padding: 16px; }
+  .qr { width: 150px; height: 150px; }
+  .steps { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .card { padding: 12px 14px; break-inside: avoid; }
+  .card.yours { border: 1px solid var(--line); }
+  .card .tag, .buttons, .done, .no-print { display: none !important; }
+}
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="hero-in">
+    <div class="wordmark" aria-label="ZeeMo"><b>Zee</b><span>Mo</span></div>
+    <h1>Put ZeeMo on your phone</h1>
+    <p class="lede">Private messaging for schools, offices and cooperatives. Free, and it installs in under a minute, with no app store needed.</p>
+  </div>
+</header>
+
+<main>
+  <section class="get" aria-labelledby="get-h">
+    <div class="qr"><img src="icons/qr-install.svg" alt="QR code that opens zeemoapp.github.io"></div>
+    <div>
+      <h2 id="get-h">Scan or open the link</h2>
+      <p>Point your phone camera at the code, or type this address in your browser:</p>
+      <div class="url">zeemoapp.github.io</div>
+      <div class="buttons">
+        <button class="btn primary" id="install" type="button" hidden>Install ZeeMo</button>
+        <a class="btn primary" id="open" href="./">Open ZeeMo</a>
+        <button class="btn ghost" id="share" type="button">Share the link</button>
+        <button class="btn ghost" id="print" type="button">Print this guide</button>
+      </div>
+      <p class="done" id="installed" hidden>ZeeMo is installed on this device. Look for it on your home screen.</p>
+    </div>
+  </section>
+
+  <div class="steps-head">
+    <h2>How to install</h2>
+  </div>
+  <section class="steps" aria-label="Installation steps">
+    <article class="card" id="card-android">
+      <span class="tag">Your device</span>
+      <h3>Android</h3>
+      <p class="sub">Use Chrome</p>
+      <ol>
+        <li>Open <b>zeemoapp.github.io</b> in Chrome.</li>
+        <li>Tap <b>Install</b> when it appears, or tap the <span class="kbd">⋮</span> menu, then <b>Install app</b> (or <b>Add to Home screen</b>).</li>
+        <li>Tap <b>Install</b>. ZeeMo appears on your home screen.</li>
+      </ol>
+    </article>
+    <article class="card" id="card-ios">
+      <span class="tag">Your device</span>
+      <h3>iPhone</h3>
+      <p class="sub">Use Safari</p>
+      <ol>
+        <li>Open <b>zeemoapp.github.io</b> in Safari.</li>
+        <li>Tap the <b>Share</b> button <span class="kbd">⬆</span> at the bottom of the screen.</li>
+        <li>Tap <b>Add to Home Screen</b>, then <b>Add</b>.</li>
+      </ol>
+    </article>
+    <article class="card" id="card-desktop">
+      <span class="tag">Your device</span>
+      <h3>Computer</h3>
+      <p class="sub">Use Chrome or Edge</p>
+      <ol>
+        <li>Open <b>zeemoapp.github.io</b>.</li>
+        <li>Click the install icon at the right of the address bar, or the <span class="kbd">⋮</span> menu, then <b>Install ZeeMo</b>.</li>
+        <li>ZeeMo opens in its own window.</li>
+      </ol>
+    </article>
+  </section>
+
+  <section class="notes" aria-labelledby="notes-h">
+    <h2 id="notes-h">Good to know</h2>
+    <ul>
+      <li>Sign in with your phone number or email. You get a 6-digit code, then you set your own passcode.</li>
+      <li>The app locks itself when you leave it. Your chats are never stored on the phone.</li>
+      <li>Updates arrive by themselves. Close the app fully and open it again to get the latest version.</li>
+      <li>Message alerts (notifications) are coming soon, together with the Google Play version.</li>
+    </ul>
+  </section>
+
+  <footer>
+    <span>ZeeMo by Zee Publishers, Minna</span>
+    <a id="terms" href="#" hidden>Terms of use</a>
+    <a id="privacy" href="#" hidden>Privacy notice</a>
+  </footer>
+</main>
+
+<script>
+(function () {
+  var url = 'https://zeemoapp.github.io/';
+  var ua = navigator.userAgent || '';
+  var ios = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  var android = /Android/.test(ua);
+  var mine = document.getElementById(ios ? 'card-ios' : android ? 'card-android' : 'card-desktop');
+  mine.classList.add('yours');
+  mine.parentNode.insertBefore(mine, mine.parentNode.firstChild);
+
+  var standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+  if (standalone) document.getElementById('installed').hidden = false;
+
+  // Chrome and Edge offer a one-tap install once the page qualifies.
+  var deferred = null;
+  var installBtn = document.getElementById('install');
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    deferred = e;
+    installBtn.hidden = false;
+  });
+  installBtn.addEventListener('click', function () {
+    if (!deferred) return;
+    deferred.prompt();
+    deferred.userChoice.then(function () { deferred = null; installBtn.hidden = true; });
+  });
+  window.addEventListener('appinstalled', function () {
+    installBtn.hidden = true;
+    document.getElementById('installed').hidden = false;
+  });
+
+  document.getElementById('print').addEventListener('click', function () { window.print(); });
+  var shareBtn = document.getElementById('share');
+  shareBtn.addEventListener('click', function () {
+    var text = 'Join me on ZeeMo, private messaging for schools, offices and cooperatives. Install it here: ';
+    if (navigator.share) {
+      navigator.share({ title: 'ZeeMo', text: text, url: url }).catch(function () {});
+    } else if (navigator.clipboard) {
+      navigator.clipboard.writeText(text + url).then(function () { shareBtn.textContent = 'Link copied'; });
+    } else {
+      window.prompt('Copy this link', url);
+    }
+  });
+
+  // Terms and Privacy live on the back end.
+  var api = (window.ZEEMO_CONFIG && window.ZEEMO_CONFIG.apiUrl) || '';
+  if (api) {
+    var t = document.getElementById('terms'), p = document.getElementById('privacy');
+    t.href = api + '?page=terms'; p.href = api + '?page=privacy';
+    t.target = p.target = '_blank';
+    t.rel = p.rel = 'noopener';
+    t.hidden = p.hidden = false;
+  }
+
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function () {});
+})();
+</script>
+</body>
+</html>

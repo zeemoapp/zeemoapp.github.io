@@ -2026,10 +2026,68 @@ function wireSecurity() {
   window.addEventListener('pageshow', e => { if (e.persisted) start(); });
 }
 
+/* ---------- Install and invite ---------- */
+const APP_URL = 'https://zeemoapp.github.io/';
+const QR_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 33 33" shape-rendering="crispEdges" class="segno"><title>QR code: zeemoapp.github.io</title><path fill="#fff" d="M0 0h33v33h-33z"/><path class="qrline" stroke="#18215c" d="M2 2.5h7m2 0h3m2 0h1m1 0h5m1 0h7m-29 1h1m5 0h1m1 0h3m1 0h2m1 0h1m3 0h1m2 0h1m5 0h1m-29 1h1m1 0h3m1 0h1m2 0h1m1 0h4m5 0h1m1 0h1m1 0h3m1 0h1m-29 1h1m1 0h3m1 0h1m1 0h4m1 0h1m1 0h3m1 0h2m1 0h1m1 0h3m1 0h1m-29 1h1m1 0h3m1 0h1m1 0h1m1 0h5m2 0h3m2 0h1m1 0h3m1 0h1m-29 1h1m5 0h1m2 0h2m1 0h2m3 0h2m1 0h1m1 0h1m5 0h1m-29 1h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7m-21 1h1m2 0h3m1 0h1m2 0h2m-19 1h1m1 0h4m1 0h1m2 0h2m3 0h1m1 0h2m1 0h2m1 0h2m1 0h1m-27 1h2m1 0h1m3 0h1m2 0h1m2 0h1m2 0h4m2 0h5m-27 1h1m1 0h1m1 0h2m1 0h3m3 0h1m2 0h1m3 0h2m1 0h2m-24 1h1m1 0h2m1 0h1m1 0h5m1 0h1m1 0h1m1 0h2m3 0h2m2 0h1m-25 1h7m1 0h1m1 0h2m4 0h3m2 0h1m1 0h1m-28 1h1m2 0h3m1 0h1m2 0h1m1 0h2m3 0h2m3 0h1m1 0h1m1 0h1m1 0h1m-27 1h6m2 0h1m3 0h4m1 0h1m1 0h3m1 0h1m2 0h1m-25 1h1m2 0h1m2 0h1m1 0h2m3 0h4m3 0h3m-25 1h3m1 0h4m4 0h1m1 0h2m1 0h3m3 0h1m2 0h1m-29 1h1m2 0h3m4 0h1m2 0h1m2 0h1m1 0h3m3 0h1m1 0h1m-27 1h2m1 0h1m2 0h1m1 0h2m2 0h1m2 0h1m3 0h1m3 0h2m1 0h1m1 0h1m-29 1h2m1 0h1m1 0h1m1 0h2m1 0h1m3 0h1m4 0h4m3 0h3m-29 1h3m2 0h3m2 0h1m1 0h1m2 0h1m1 0h1m2 0h5m1 0h2m-20 1h1m2 0h1m1 0h1m1 0h1m2 0h3m3 0h3m-27 1h7m4 0h1m1 0h1m1 0h1m1 0h4m1 0h1m1 0h1m1 0h2m-28 1h1m5 0h1m1 0h2m1 0h1m4 0h2m1 0h2m3 0h2m2 0h1m-29 1h1m1 0h3m1 0h1m1 0h1m1 0h2m1 0h1m1 0h10m2 0h2m-29 1h1m1 0h3m1 0h1m1 0h1m2 0h4m1 0h1m6 0h1m2 0h2m-28 1h1m1 0h3m1 0h1m5 0h2m2 0h1m1 0h1m1 0h2m1 0h3m1 0h2m-29 1h1m5 0h1m1 0h2m1 0h1m1 0h1m1 0h1m5 0h1m2 0h3m1 0h1m-29 1h7m4 0h3m2 0h1m2 0h6"/></svg>';
+let installPrompt = null;
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installPrompt = e; });
+window.addEventListener('appinstalled', () => { installPrompt = null; });
+
+function isInstalled() {
+  return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+}
+
+function deviceKind() {
+  const ua = navigator.userAgent || '';
+  if (/iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) return 'ios';
+  return /Android/.test(ua) ? 'android' : 'desktop';
+}
+
+const INSTALL_STEPS = {
+  android: ['Open zeemoapp.github.io in Chrome.', 'Tap the ⋮ menu, then Install app (or Add to Home screen).', 'Tap Install. ZeeMo appears on your home screen.'],
+  ios: ['Open zeemoapp.github.io in Safari.', 'Tap the Share button at the bottom of the screen.', 'Tap Add to Home Screen, then Add.'],
+  desktop: ['Open zeemoapp.github.io in Chrome or Edge.', 'Click the install icon at the right of the address bar, or ⋮ menu > Install ZeeMo.', 'ZeeMo opens in its own window.']
+};
+
+function openInstall() {
+  closeMenu();
+  const body = [];
+  if (isInstalled()) {
+    body.push(h('p', { class: 'install-ok', text: 'ZeeMo is installed on this device.' }));
+  } else if (installPrompt) {
+    body.push(h('p', { class: 'hint', text: 'Add ZeeMo to this device so it opens like any other app, full screen and from its own icon.' }),
+      h('button', { class: 'btn', text: 'Install ZeeMo', onclick: async () => {
+        const p = installPrompt; installPrompt = null;
+        p.prompt();
+        try { await p.userChoice; } catch { /* closed */ }
+        openInstall();
+      } }));
+  } else {
+    body.push(h('div', { class: 'field-block' },
+      h('span', { class: 'section-title', text: 'Install on this device' }),
+      h('ol', { class: 'install-steps' }, ...INSTALL_STEPS[deviceKind()].map(t => h('li', { text: t })))));
+  }
+  const share = h('button', { class: 'btn secondary', text: 'Invite people', onclick: async () => {
+    const text = 'Join me on ZeeMo, private messaging for schools, offices and cooperatives. Install it here: ';
+    try {
+      if (navigator.share) await navigator.share({ title: 'ZeeMo', text, url: APP_URL });
+      else { await navigator.clipboard.writeText(text + APP_URL); toast('Link copied'); }
+    } catch { /* cancelled */ }
+  } });
+  body.push(h('div', { class: 'field-block invite' },
+    h('span', { class: 'section-title', text: 'Invite people' }),
+    h('p', { class: 'hint', text: 'They scan this code with their phone camera, or open zeemoapp.github.io.' }),
+    h('img', { class: 'invite-qr', src: 'data:image/svg+xml,' + encodeURIComponent(QR_SVG), alt: 'QR code that opens zeemoapp.github.io', width: '180', height: '180' }),
+    share,
+    h('a', { class: 'link', href: 'install.html', target: '_blank', rel: 'noopener', text: 'Open the printable install guide' })));
+  sheet('Install & invite', ...body);
+}
+
 /* ---------- Menu ---------- */
 function toggleMenu() {
   const m = $('menu');
   $('menu-lock').hidden = !(state.me && state.me.hasPasscode);
+  $('menu-install').hidden = IN_APPS_SCRIPT;
   m.hidden = !m.hidden;
   if (!m.hidden) m.querySelector('button').focus();
 }
@@ -2153,6 +2211,7 @@ function wireShell() {
   $('menu-btn').addEventListener('click', toggleMenu);
   $('menu-new-group').addEventListener('click', openNewGroup);
   $('menu-profile').addEventListener('click', openProfile);
+  $('menu-install').addEventListener('click', openInstall);
   $('menu-signout').addEventListener('click', () => { closeMenu(); api.logout().catch(() => {}); });
   $('menu-lock').addEventListener('click', () => { closeMenu(); lockApp({}); });
   $('fab').addEventListener('click', openNewChat);

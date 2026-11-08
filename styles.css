@@ -436,6 +436,12 @@ textarea.input { height: auto; min-height: 80px; padding: 12px 14px; resize: ver
 .auth .check { display: flex; gap: 12px; align-items: flex-start; font-weight: 400; font-size: 15px; line-height: 1.4; cursor: pointer; }
 .auth .check input { width: 22px; height: 22px; flex: 0 0 22px; margin: 1px 0 0; accent-color: var(--turmeric); }
 .legal-links { margin: 0; font-size: 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 2px; }
+.install-steps { margin: 0; padding-left: 22px; display: grid; gap: 6px; }
+.install-ok { margin: 0; font-weight: 700; color: var(--accent-text); }
+.invite { justify-items: center; text-align: center; }
+.invite .hint { margin: 0; }
+.invite-qr { width: 180px; height: 180px; padding: 10px; background: #fff; border-radius: 14px; border: 1px solid var(--line); image-rendering: pixelated; }
+.invite .link { text-decoration: underline; color: var(--accent-text); }
 .meta .edited { font-style: italic; margin-right: 4px; }
 .legal-links .link { border: 0; background: transparent; padding: 4px 0; text-decoration: underline; color: var(--muted); }
 .auth .legal-links, .auth .legal-links .link { color: var(--meta-out); }
