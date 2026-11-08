@@ -4,9 +4,9 @@
  * Bump VERSION whenever you deploy changed front-end files.
  */
 
-const VERSION = 'zeemo-shell-v2';
+const VERSION = 'zeemo-shell-v4';
 const SHELL = [
-  './', 'index.html', 'styles.css', 'app.js', 'zeemo-client.js', 'mock-api.js', 'config.js',
+  './', 'index.html', 'styles.css', 'app.js', 'zeemo-client.js', 'config.js',
   'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png'
 ];
 

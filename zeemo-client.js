@@ -7,7 +7,7 @@
  *   api.addEventListener('messages', e => render(e.detail));
  *   api.start();
  *
- * Events: messages, receipts, deletions, listchanged, pending, sent, failed,
+ * Events: messages, receipts, deletions, edits, listchanged, pending, sent, failed,
  *         signedout, locked, needpasscode, needterms, synced, syncerror
  * Pass { transport } to replace HTTP (used by the in-browser demo and google.script.run).
  *
@@ -61,6 +61,7 @@ export class ZeeMoClient extends EventTarget {
     this.cursors = {};
     this.receiptVersions = {};
     this.deleteVersions = {};
+    this.editVersions = {};
     this.listVersion = '';
 
     this.activeConvId = null;
@@ -143,6 +144,7 @@ export class ZeeMoClient extends EventTarget {
     this.cursors = {};
     this.receiptVersions = {};
     this.deleteVersions = {};
+    this.editVersions = {};
     this.listVersion = '';
   }
 
@@ -276,6 +278,7 @@ export class ZeeMoClient extends EventTarget {
         cursors: this.cursors,
         receiptVersions: this.receiptVersions,
         deleteVersions: this.deleteVersions,
+        editVersions: this.editVersions,
         listVersion: this.listVersion,
         active: this.isActive()   // lets the server keep the unlock window open only while someone is using the app
       });
@@ -299,6 +302,11 @@ export class ZeeMoClient extends EventTarget {
       Object.entries(data.deletions || {}).forEach(([convId, d]) => {
         this.deleteVersions[convId] = d.ver;
         this._emit('deletions', { convId, msgIds: d.msgIds });
+      });
+
+      Object.entries(data.edits || {}).forEach(([convId, d]) => {
+        this.editVersions[convId] = d.ver;
+        if (d.messages.length) this._emit('edits', { convId, messages: d.messages });
       });
 
       if (data.listChanged) {

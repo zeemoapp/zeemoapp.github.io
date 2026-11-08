@@ -9,11 +9,14 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://script.google.com">
+<link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,600;12..96,800&display=swap">
 <link rel="stylesheet" href="styles.css">
 <script src="config.js"></script>
+<link rel="modulepreload" href="zeemo-client.js">
 <script type="module" src="app.js"></script>
 </head>
 <body>
@@ -47,6 +50,7 @@
 </div>
 <div class="sheet" id="sheet" hidden></div>
 <div class="auth" id="auth" hidden></div>
+<div class="shield" id="shield" aria-hidden="true"><div class="wordmark"><b>Zee</b><span>Mo</span></div></div>
 <div class="actions" id="actions" hidden></div>
 <div class="toast" id="toast" role="status" hidden></div>
 <!-- APP:END -->

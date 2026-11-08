@@ -4,19 +4,28 @@
  *
  * Privacy: messages, photos and voice notes live only in memory (state below) and
  * are wiped on lock, on sign-out and when the page is hidden or closed. Only the
- * session token is kept on the device, and the passcode guards it.
+ * session token (guarded by the passcode) and the owner's settings are kept on the device.
  */
 import { ZeeMoClient, compressImage, deviceLabel } from './zeemo-client.js';
-import { createMockTransport } from './mock-api.js';
 
 const CONFIG = window.ZEEMO_CONFIG || {};
 // Inside Apps Script (Index.html served by doGet), calls go through google.script.run.
 const IN_APPS_SCRIPT = !!(window.google && google.script && google.script.run);
 const DEMO = !CONFIG.apiUrl && !IN_APPS_SCRIPT;
 const api = new ZeeMoClient(CONFIG.apiUrl || 'local:', {
-  transport: IN_APPS_SCRIPT ? appsScriptTransport : DEMO ? createMockTransport() : null,
+  transport: IN_APPS_SCRIPT ? appsScriptTransport : DEMO ? demoTransport() : null,
   isActive: () => activeSinceLastPoll()
 });
+
+/** The demo back end (about 150 KB) is downloaded only when the demo is actually used. */
+function demoTransport() {
+  let ready = null;
+  return (action, token, payload) => {
+    if (!ready) ready = loadDemo().then(m => m.createMockTransport());
+    return ready.then(t => t(action, token, payload));
+  };
+}
+const loadDemo = () => import('./mock-api.js');   // build: demo-loader
 
 /** Same request and response JSON as doPost, carried by google.script.run. */
 function appsScriptTransport(action, token, payload) {
@@ -52,6 +61,8 @@ const PATHS = {
   lock: '<rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 018 0v2.5"/>',
   smile: '<circle cx="12" cy="12" r="8.5"/><path d="M8.5 14a4.2 4.2 0 007 0"/><circle cx="9.3" cy="10" r=".9" fill="currentColor" stroke="none"/><circle cx="14.7" cy="10" r=".9" fill="currentColor" stroke="none"/>',
   flag: '<path d="M5.5 21V4.5"/><path d="M5.5 4.5h11l-2.2 4 2.2 4h-11"/>',
+  edit: '<path d="M4 20l1.2-4.2L15.6 5.4a2 2 0 012.8 0l.2.2a2 2 0 010 2.8L8.2 18.8 4 20z"/>',
+  camera: '<path d="M4 8.5A1.5 1.5 0 015.5 7h2.2l1.5-2h5.6l1.5 2h2.2A1.5 1.5 0 0120 8.5v9a1.5 1.5 0 01-1.5 1.5h-13A1.5 1.5 0 014 17.5z"/><circle cx="12" cy="13" r="3.4"/>',
   keyboard: '<rect x="3" y="6.5" width="18" height="11" rx="2"/><path d="M7 10h.01M10 10h.01M13 10h.01M16 10h.01M8 14h8"/>'
 };
 function icon(name) {
@@ -309,17 +320,29 @@ const METHOD_COPY = {
   email: { tab: 'Email', label: 'Email address', type: 'email', mode: 'email', ac: 'email', ph: 'name@example.com', where: 'emailed to' }
 };
 
+const CFG_KEY = 'zm.cfg';   // owner settings only: no personal data
+
+function applyAuthConfig(cfg) {
+  auth.methods = cfg.methods && cfg.methods.length ? cfg.methods : ['phone'];
+  if (cfg.security) state.security = cfg.security;
+  if (cfg.links) state.links = cfg.links;
+  if (!auth.methods.includes(auth.method)) auth.method = auth.methods[0];
+}
+
+/** Settings from the last visit are used at once; a fresh copy is fetched alongside. */
+function cachedAuthConfig() {
+  try { const c = JSON.parse(localStorage.getItem(CFG_KEY) || 'null'); if (c) applyAuthConfig(c); return !!c; } catch { return false; }
+}
+
 async function loadAuthConfig(force) {
   if (auth.methods && !force) return;
   try {
     const cfg = await api.authConfig();
-    auth.methods = cfg.methods && cfg.methods.length ? cfg.methods : ['phone'];
-    if (cfg.security) state.security = cfg.security;
-    if (cfg.links) state.links = cfg.links;
+    applyAuthConfig(cfg);
+    try { localStorage.setItem(CFG_KEY, JSON.stringify(cfg)); } catch { /* storage unavailable */ }
   } catch {
-    auth.methods = ['phone'];   // older back end without authConfig
+    if (!auth.methods) applyAuthConfig({ methods: ['phone'] });   // older back end, or offline
   }
-  if (!auth.methods.includes(auth.method)) auth.method = auth.methods[0];
 }
 
 function lede() {
@@ -393,7 +416,7 @@ async function renderAuth(errorMsg, demoCode) {
             const r = await api.verifyOtp({ method: auth.method, [auth.method]: auth.sentTo }, code.value, name.value);
             state.me = r.user;
             auth.step = 'start';
-            await loadAuthConfig(true);
+            loadAuthConfig(true);   // refresh in the background
             // A sign-in code is not enough on its own: a device must also know the passcode.
             nextStep('code');
           } catch (err) {
@@ -502,6 +525,7 @@ function mergeMessages(convId, list) {
 async function openChat(convId) {
   state.activeId = convId;
   state.replyTo = null;
+  state.editing = null;
   document.body.classList.add('chat-open');
   const conv = activeConv();
   if (conv) { conv.hasUnread = false; conv.unreadCount = 0; conv.unreadMore = false; }
@@ -525,6 +549,7 @@ function closeChat() {
   closeActions();
   state.activeId = null;
   state.replyTo = null;
+  state.editing = null;
   api.closeChat();
   if (id) {
     delete state.msgs[id];
@@ -650,7 +675,9 @@ function renderThread(forceBottom) {
     const fresh = m.msgId && m.msgId > lastRenderedId && lastRenderedId !== '';
     const failed = m.status === 'failed';
 
-    const meta = h('span', { class: 'meta' }, timeFmt.format(d),
+    const meta = h('span', { class: 'meta' },
+      m.editedAt ? h('span', { class: 'edited', text: 'edited' }) : null,
+      timeFmt.format(d),
       out ? (m.status === 'pending' ? h('span', { 'aria-label': 'Sending' }, icon('clock'))
         : failed ? h('span', { 'aria-label': 'Not sent' }, icon('alert'))
         : tickFor(m)) : null);
@@ -733,7 +760,12 @@ function renderComposer() {
   state.composerKey = composerKey(activeConv());
   const stopped = blockedComposer(activeConv());
   if (stopped) { emojiState.open = false; wrap.append(stopped); return; }
-  if (state.replyTo) {
+  const editing = state.editing && state.editing.convId === state.activeId ? state.editing : null;
+  if (editing) {
+    wrap.append(h('div', { class: 'replying editing' },
+      h('div', { class: 'quote' }, h('b', { text: 'Edit message' }), h('span', { text: editing.original })),
+      h('button', { class: 'icon-btn', 'aria-label': 'Cancel edit', onclick: cancelEdit }, icon('close'))));
+  } else if (state.replyTo) {
     wrap.append(h('div', { class: 'replying' }, quoteNode(state.replyTo, state.activeId),
       h('button', { class: 'icon-btn', 'aria-label': 'Cancel reply', onclick: () => { state.replyTo = null; renderComposer(); } }, icon('close'))));
   }
@@ -748,6 +780,8 @@ function renderComposer() {
   }
 
   const file = h('input', { type: 'file', accept: 'image/*', hidden: true, onchange: () => { pickerClosed(); if (file.files[0]) sendPhoto(file.files[0]); file.value = ''; } });
+  // Phones: a separate button opens the camera straight away.
+  const cam = h('input', { type: 'file', accept: 'image/*', capture: 'environment', hidden: true, onchange: () => { pickerClosed(); if (cam.files[0]) sendPhoto(cam.files[0]); cam.value = ''; } });
   const ta = h('textarea', { id: 'composer-text', rows: '1', placeholder: 'Message', 'aria-label': 'Message', maxlength: '4000', autocomplete: 'off' });
   const touch = !window.matchMedia('(hover: hover) and (pointer: fine)').matches;
   let sel = { start: 0, end: 0 };
@@ -792,15 +826,23 @@ function renderComposer() {
     ta.style.height = 'auto';
     ta.style.height = Math.min(ta.scrollHeight, 140) + 'px';
     const hasText = ta.value.trim().length > 0;
+    if (editing) {
+      sendBtn.replaceChildren(icon('tick'));
+      sendBtn.setAttribute('aria-label', 'Save edit');
+      sendBtn.disabled = !hasText;
+      return;
+    }
     sendBtn.replaceChildren(icon(hasText ? 'send' : 'mic'));
     sendBtn.setAttribute('aria-label', hasText ? 'Send' : 'Record voice note');
   };
   ta.addEventListener('input', sync);
   ta.addEventListener('keydown', e => {
     if (e.key === 'Enter' && !e.shiftKey && window.matchMedia('(hover: hover)').matches) { e.preventDefault(); submit(); }
+    if (e.key === 'Escape' && editing) { e.preventDefault(); cancelEdit(); }
   });
   const submit = () => {
     const text = ta.value.trim();
+    if (editing) { if (text) saveEdit(editing, text); return; }
     if (!text) { startRecording(); return; }
     ta.value = '';
     sync();
@@ -811,13 +853,67 @@ function renderComposer() {
 
   wrap.append(h('div', { class: 'composer' },
     h('div', { class: 'field' }, emojiBtn, ta,
-      h('button', { class: 'icon-btn', 'aria-label': 'Send a photo', onclick: () => { pickerOpened(); file.click(); } }, icon('image')), file),
+      h('button', { class: 'icon-btn', 'aria-label': 'Send a photo from the gallery', title: 'Photo from gallery', onclick: () => { pickerOpened(); file.click(); } }, icon('image')), file,
+      touch && !editing ? h('button', { class: 'icon-btn', 'aria-label': 'Take a photo', title: 'Camera', onclick: () => { pickerOpened(); cam.click(); } }, icon('camera')) : null,
+      touch && !editing ? cam : null),
     sendBtn));
   if (emojiState.open) wrap.append(emojiPanel(pick));
   sync();
 }
 
+function startEdit(m) {
+  state.replyTo = null;
+  state.editing = { convId: m.convId, msgId: m.msgId, original: m.body };
+  renderComposer();
+  const ta = $('composer-text');
+  if (!ta) return;
+  ta.value = m.body;
+  ta.dispatchEvent(new Event('input'));
+  ta.focus();
+  ta.setSelectionRange(ta.value.length, ta.value.length);
+}
+
+function cancelEdit() {
+  state.editing = null;
+  renderComposer();
+}
+
+/** Show the new text at once; put the old text back if the server refuses. */
+async function saveEdit(editing, text) {
+  state.editing = null;
+  renderComposer();
+  const map = state.msgs[editing.convId];
+  const m = map && map.get(editing.msgId);
+  if (!m || text === m.body) return;
+  const before = { body: m.body, editedAt: m.editedAt };
+  Object.assign(m, { body: text, editedAt: new Date().toISOString() });
+  if (editing.convId === state.activeId) renderThread(false);
+  try {
+    const fresh = await api.call('editMessage', { convId: editing.convId, msgId: editing.msgId, body: text });
+    applyEdits(editing.convId, [fresh]);
+  } catch (err) {
+    Object.assign(m, before);
+    if (editing.convId === state.activeId) renderThread(false);
+    toast(errorText(err));
+  }
+}
+
+/** Edited messages from this device or from sync. */
+function applyEdits(convId, list) {
+  const map = state.msgs[convId];
+  let changed = false;
+  list.forEach(e => {
+    const m = map && map.get(e.msgId);
+    if (m && !m.deleted && (m.body !== e.body || m.editedAt !== e.editedAt)) { Object.assign(m, { body: e.body, editedAt: e.editedAt }); changed = true; }
+  });
+  const conv = state.convs.find(c => c.convId === convId);
+  const last = conv && list.find(e => e.msgId === conv.lastMsgId);
+  if (last) { conv.lastMsgPreview = previewOf(last); renderList(); }
+  if (changed && convId === state.activeId) renderThread(false);
+}
+
 function startReply(m) {
+  state.editing = null;
   state.replyTo = m.msgId;
   renderComposer();
   const ta = $('composer-text');
@@ -1052,6 +1148,13 @@ function myRole(convId) {
   return conv ? conv.myRole : 'member';
 }
 
+/** Own text messages, within the owner's edit window. */
+function canEdit(m) {
+  const minutes = Number(state.security.editMinutes) || 0;
+  return !!(minutes && m.msgId && !m.deleted && m.type === 'text' && m.senderId === state.me.userId &&
+    Date.now() - new Date(m.createdAt).getTime() <= minutes * 60000);
+}
+
 function canDelete(m) {
   if (!m.msgId || m.deleted || m.type === 'system') return false;
   const conv = state.convs.find(c => c.convId === m.convId);
@@ -1081,6 +1184,7 @@ function openActions(m, confirming) {
       ]
     : [
         h('button', { class: 'act', onclick: () => { closeActions(); startReply(m); } }, icon('reply'), 'Reply'),
+        canEdit(m) ? h('button', { class: 'act', onclick: () => { closeActions(); startEdit(m); } }, icon('edit'), 'Edit') : null,
         canDelete(m) ? h('button', { class: 'act danger', onclick: () => openActions(m, true) }, icon('trash'), 'Delete for everyone') : null,
         m.senderId !== state.me.userId && m.msgId && !m.deleted && m.type !== 'system'
           ? h('button', { class: 'act danger', onclick: () => openReport({ convId: m.convId, msgId: m.msgId, userId: m.senderId, name: state.names[m.senderId] || 'Member', alreadyBlocked: blockedIds().has(m.senderId) }) }, icon('flag'), 'Report')
@@ -1558,6 +1662,7 @@ function wipeScreen() {
   closeMenu();
   state.activeId = null;
   state.replyTo = null;
+  state.editing = null;
   state.convs = [];
   state.msgs = {};
   state.pending = {};
@@ -1863,7 +1968,30 @@ function idleCheck() {
   if (mins > 0 && Date.now() - guard.lastActivity >= mins * 60000) lockApp({});
 }
 
+/**
+ * Privacy shield. Phones keep a picture of the screen for the recent-apps view; the shield
+ * covers the chats the moment the app starts to leave the foreground, so that picture shows
+ * only the ZeeMo logo. It is lifted when the app comes back, behind the lock screen if locked.
+ */
+function shield(on) {
+  document.documentElement.classList.toggle('shielded', !!on);
+}
+function wireShield() {
+  const phone = !(window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches);
+  const back = () => { if (!document.hidden) shield(false); };
+  // On phones, focus is lost first when the recent-apps view or home screen opens: cover at once.
+  window.addEventListener('blur', () => { if (phone && state.me) shield(true); });
+  window.addEventListener('focus', back);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) { if (state.me) shield(true); } else back(); }, true);
+  window.addEventListener('pagehide', () => shield(true), true);
+  document.addEventListener('freeze', () => shield(true));
+  window.addEventListener('pageshow', back);
+  // Never trap anyone behind the shield if a browser misses the focus event.
+  $('shield').addEventListener('pointerdown', () => { if (!document.hidden) shield(false); });
+}
+
 function wireSecurity() {
+  wireShield();
   ['pointerdown', 'keydown', 'touchstart', 'wheel', 'input'].forEach(ev =>
     document.addEventListener(ev, markActive, { capture: true, passive: true }));
   setInterval(idleCheck, 10000);
@@ -1958,6 +2086,7 @@ api.addEventListener('deletions', e => {
   if (conv && msgIds.includes(conv.lastMsgId)) { conv.lastMsgPreview = 'This message was deleted'; renderList(); }
   if (changed && convId === state.activeId) renderThread(false);
 });
+api.addEventListener('edits', e => applyEdits(e.detail.convId, e.detail.messages));
 api.addEventListener('receipts', e => {
   state.receipts[e.detail.convId] = e.detail.members;
   if (e.detail.convId === state.activeId) renderThread(false);
@@ -1990,10 +2119,27 @@ async function boot() {
 
 /** Opening the app (or returning to it from the back/forward cache). */
 async function start() {
-  if (!api.signedIn) { renderAuth(); return; }
+  const hadConfig = cachedAuthConfig();
+  if (!api.signedIn) {
+    if (!hadConfig) { renderAuth(); return; }
+    renderAuth();
+    // If the owner has changed the sign-in methods since the last visit, redraw once.
+    const before = auth.methods.join();
+    loadAuthConfig(true).then(() => {
+      const root = $('auth');
+      if (auth.methods.join() !== before && auth.step === 'start' && !root.hidden && root.dataset.mode === 'signin') {
+        const typed = $('auth-id');
+        if (typed) auth.value = typed.value;
+        renderAuth();
+      }
+    });
+    return;
+  }
   try {
-    await loadAuthConfig(true);
-    state.me = await api.call('me');
+    // Settings and profile together; with saved settings, only the profile is waited for.
+    const fresh = loadAuthConfig(true);
+    const [me] = await Promise.all([api.call('me'), hadConfig ? null : fresh]);
+    state.me = me;
   } catch (err) {
     if (err.code === 'NETWORK') { renderAuth('No connection. Check your data or Wi-Fi and try again.'); return; }
     if (!api.signedIn) return;   // the signedout handler has shown the sign-in screen

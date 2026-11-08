@@ -436,6 +436,7 @@ textarea.input { height: auto; min-height: 80px; padding: 12px 14px; resize: ver
 .auth .check { display: flex; gap: 12px; align-items: flex-start; font-weight: 400; font-size: 15px; line-height: 1.4; cursor: pointer; }
 .auth .check input { width: 22px; height: 22px; flex: 0 0 22px; margin: 1px 0 0; accent-color: var(--turmeric); }
 .legal-links { margin: 0; font-size: 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 2px; }
+.meta .edited { font-style: italic; margin-right: 4px; }
 .legal-links .link { border: 0; background: transparent; padding: 4px 0; text-decoration: underline; color: var(--muted); }
 .auth .legal-links, .auth .legal-links .link { color: var(--meta-out); }
 .composer-note {
@@ -452,6 +453,16 @@ textarea.input { height: auto; min-height: 80px; padding: 12px 14px; resize: ver
 .safety .btn { justify-self: start; }
 .report-btn { width: 36px; height: 36px; flex-basis: 36px; color: var(--muted); }
 .report-btn svg { width: 18px; height: 18px; }
+
+/* ---------- Privacy shield: covers the screen whenever the app leaves the foreground ---------- */
+.shield {
+  position: fixed; inset: 0; z-index: 2147483647; display: none;
+  align-items: center; justify-content: center;
+  background: var(--indigo-deep); color: var(--on-indigo);
+}
+html.shielded .shield { display: flex; }
+html.shielded body > :not(.shield) { visibility: hidden; }
+.shield .wordmark b, .shield .wordmark span { font-size: 44px; }
 
 /* ---------- Toast ---------- */
 .toast {
